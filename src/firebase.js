@@ -2,7 +2,6 @@ import { initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getDatabase, ref, push, set } from "firebase/database";
 
-// Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBFOu29q0JHbXzpSqDkdUI78CUwqCAMp88",
     authDomain: "lars-db2c3.firebaseapp.com",
@@ -14,12 +13,10 @@ const firebaseConfig = {
     measurementId: "G-CPR08DY84Z"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 
-// Function to save a prompt under the logged-in user's ID
 export const savePromptToDatabase = (prompt) => {
     const user = auth.currentUser;
 

@@ -11,7 +11,6 @@ function App() {
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [prompt, setPrompt] = useState("");
 
-    // Check if user is logged in when app loads
     useEffect(() => {
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -22,7 +21,6 @@ function App() {
         });
     }, []);
 
-    // Sign Up Handler
     const handleSignUp = async () => {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
@@ -34,7 +32,6 @@ function App() {
         }
     };
 
-    // Sign In Handler
     const handleSignIn = async () => {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
@@ -47,7 +44,6 @@ function App() {
         }
     };
 
-    // Toggle Dark/Light Mode
     const toggleMode = () => {
         setIsDarkMode(!isDarkMode);
     };
@@ -62,7 +58,6 @@ function App() {
         savePromptToDatabase(prompt);
         alert("Prompt saved successfully!");
 
-        // Clear input after saving
         setPrompt("");
     };
 
@@ -76,7 +71,7 @@ function App() {
                 </button>
             </header>
 
-            {/* Authentication Section */}
+            {/* Authentication */}
             <section id="auth" style={{ display: isLoggedIn ? 'none' : 'block' }}>
                 <div className="auth-box">
                     <h2>Login</h2>
@@ -87,7 +82,7 @@ function App() {
                 </div>
             </section>
 
-            {/* AI Image Generation Section */}
+            {/* AI Generation */}
             <section id="main" style={{ display: isLoggedIn ? 'block' : 'none' }}>
                 <h2>Generate AI Images</h2>
                 <textarea
