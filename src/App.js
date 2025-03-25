@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { signUp, signIn } from './auth.js';
-import { savePromptToDatabase, uploadImageToStorage } from './firebase.js';
+import { savePromptToDatabase, uploadImageToStorage, fetchComfyUIImages } from './firebase.js';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import './LARS.css';
 
@@ -13,8 +13,8 @@ function App() {
     const [prompt, setPrompt] = useState("");
     const [image, setImage] = useState(null);
     const [imageURL, setImageURL] = useState("");
+    const [generatedImage, setGeneratedImage] = useState(null);
 
-    // Check if user is logged in when app loads
     useEffect(() => {
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -26,6 +26,19 @@ function App() {
             }
         });
     }, []);
+
+    useEffect(() => {
+        if (isLoggedIn) {
+            fetchLatestGeneratedImage();
+        }
+    }, [isLoggedIn]);
+
+    const fetchLatestGeneratedImage = async () => {
+        const images = await fetchComfyUIImages();
+        if (images.length > 0) {
+            setGeneratedImage(images[images.length - 1]);
+        }
+    };
 
     const handleSignUp = async () => {
         const email = document.getElementById("email").value;
@@ -50,18 +63,16 @@ function App() {
         }
     };
 
-    // Toggle Dark/Light Mode
     const toggleMode = () => {
         setIsDarkMode(!isDarkMode);
     };
 
-    // Handle Image Upload
     const handleImageUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
         setImage(file);
-        const url = await uploadImageToStorage(file, userId);
+        const url = await uploadImageToStorage(userId, file);
         if (url) {
             setImageURL(url);
             alert("Image uploaded successfully!");
@@ -81,7 +92,9 @@ function App() {
         }
 
         savePromptToDatabase(userId, prompt);
-        alert("Prompt saved successfully!");
+        alert("Prompt sent to AI PC. Please wait for the generated image.");
+
+        setTimeout(fetchLatestGeneratedImage, 10000);
         setPrompt("");
     };
 
@@ -115,11 +128,20 @@ function App() {
               ></textarea>
               <button id="generate" onClick={handleGenerate}>Generate</button>
 
-              {/* Image Upload */}
               <input type="file" accept="image/*" onChange={handleImageUpload} />
 
-              {/* Display Uploaded Image */}
               {imageURL && <img src={imageURL} alt="Uploaded AI Art" style={{ width: "300px", marginTop: "10px" }} />}
+
+              {generatedImage && (
+                <div className="image-container">
+                    <h3>Generated Image:</h3>
+                    <img src={generatedImage} alt="Generated AI Art" style={{ width: "300px", marginTop: "10px" }} />
+                    <br />
+                    <a href={generatedImage} download="generated-image.jpg">
+                        <button>Download Image</button>
+                    </a>
+                </div>
+              )}
 
               <button id="logout" onClick={() => setIsLoggedIn(false)}>Logout</button>
           </section>
