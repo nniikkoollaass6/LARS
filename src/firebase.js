@@ -3,7 +3,6 @@ import { getAuth } from "firebase/auth";
 import { getDatabase, ref, push, set } from "firebase/database";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, listAll } from "firebase/storage";
 
-// Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyBFOu29q0JHbXzpSqDkdUI78CUwqCAMp88",
     authDomain: "lars-db2c3.firebaseapp.com",
@@ -15,20 +14,17 @@ const firebaseConfig = {
     measurementId: "G-CPR08DY84Z"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const database = getDatabase(app);
 const storage = getStorage(app);
 
-// Function to save a prompt to Firebase Realtime Database
 export const savePromptToDatabase = (userId, prompt) => {
     const messagesRef = ref(database, `users/${userId}/messages`);
     const newMessageRef = push(messagesRef); // Generates a unique message ID
     set(newMessageRef, prompt); // Saves the prompt as the value of the message ID
 };
 
-// Function to upload an AI-generated image to Firebase Storage
 export const uploadImageToStorage = async (userId, imageFile) => {
     try {
         const fileName = `${Date.now()}-${imageFile.name}`;
@@ -47,7 +43,6 @@ export const fetchComfyUIImages = async () => {
         const comfyUIRef = storageRef(storage, "ComfyUI/");
         const imageList = await listAll(comfyUIRef);
 
-        // Fetch download URLs for each image
         const imageUrls = await Promise.all(
           imageList.items.map(async (item) => {
               return await getDownloadURL(item);
