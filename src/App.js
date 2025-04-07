@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { signUp, signIn } from './auth.js';
-import { savePromptToDatabase, uploadImageToStorage, fetchComfyUIImages } from './firebase.js';
+import { savePromptToDatabase, fetchLatestComfyUIImage } from './firebase.js';
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import './LARS.css';
 
@@ -11,15 +11,15 @@ function App() {
     const [userId, setUserId] = useState(null);
     const [isDarkMode, setIsDarkMode] = useState(true);
     const [prompt, setPrompt] = useState("");
-    const [image, setImage] = useState(null);
-    const [imageURL, setImageURL] = useState("");
-    const [generatedImage, setGeneratedImage] = useState(null);
+    const [latestImageURL, setLatestImageURL] = useState("");
 
+    // Check user authentication status
     useEffect(() => {
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 setIsLoggedIn(true);
                 setUserId(user.uid);
+                fetchAndSetLatestImage();
             } else {
                 setIsLoggedIn(false);
                 setUserId(null);
@@ -27,19 +27,7 @@ function App() {
         });
     }, []);
 
-    useEffect(() => {
-        if (isLoggedIn) {
-            fetchLatestGeneratedImage();
-        }
-    }, [isLoggedIn]);
-
-    const fetchLatestGeneratedImage = async () => {
-        const images = await fetchComfyUIImages();
-        if (images.length > 0) {
-            setGeneratedImage(images[images.length - 1]);
-        }
-    };
-
+    // Sign up function
     const handleSignUp = async () => {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
@@ -51,6 +39,7 @@ function App() {
         }
     };
 
+    // Sign in function
     const handleSignIn = async () => {
         const email = document.getElementById("email").value;
         const password = document.getElementById("password").value;
@@ -63,47 +52,41 @@ function App() {
         }
     };
 
-    const toggleMode = () => {
-        setIsDarkMode(!isDarkMode);
-    };
+    // Toggle dark/light mode
+    const toggleMode = () => setIsDarkMode(!isDarkMode);
 
-    const handleImageUpload = async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        setImage(file);
-        const url = await uploadImageToStorage(userId, file);
-        if (url) {
-            setImageURL(url);
-            alert("Image uploaded successfully!");
-        } else {
-            alert("Image upload failed.");
-        }
-    };
-
+    // Handle prompt generation
     const handleGenerate = async () => {
-        if (!userId) {
-            alert("You must be logged in to generate and save prompts.");
-            return;
-        }
-        if (prompt.trim() === "") {
-            alert("Please enter a prompt before generating.");
-            return;
-        }
+        if (!userId) return alert("You must be logged in.");
+        if (!prompt.trim()) return alert("Enter a prompt.");
 
-        savePromptToDatabase(userId, prompt);
-        alert("Prompt sent to AI PC. Please wait for the generated image.");
-
-        setTimeout(fetchLatestGeneratedImage, 10000);
+        await savePromptToDatabase(userId, prompt);
         setPrompt("");
+        alert("Prompt sent to AI PC.");
+
+        // Delay and then refresh the image
+        setTimeout(fetchAndSetLatestImage, 6000); // adjust this timing based on how fast your AI PC responds
     };
+
+    // Fetch the latest image from Firebase Storage
+    const fetchAndSetLatestImage = async () => {
+        const url = await fetchLatestComfyUIImage();
+        if (url) {
+            console.log("Fetched Image URL:", url);  // Log the URL
+            setLatestImageURL(url);
+        } else {
+            console.log("No image URL fetched.");
+            setLatestImageURL("");
+        }
+    };
+
 
     return (
       <div className={isDarkMode ? 'dark-mode' : 'light-mode'}>
           <header>
               <h1>LARS</h1>
               <p>Linux-based Art Rendering System</p>
-              <button id="modeSwitch" onClick={toggleMode}>
+              <button onClick={toggleMode}>
                   {isDarkMode ? 'Light Mode' : 'Dark Mode'}
               </button>
           </header>
@@ -121,29 +104,26 @@ function App() {
           <section id="main" style={{ display: isLoggedIn ? 'block' : 'none' }}>
               <h2>Generate AI Images</h2>
               <textarea
-                id="prompt"
                 placeholder="Enter your prompt..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
               ></textarea>
-              <button id="generate" onClick={handleGenerate}>Generate</button>
+              <button onClick={handleGenerate}>Generate</button>
 
-              <input type="file" accept="image/*" onChange={handleImageUpload} />
-
-              {imageURL && <img src={imageURL} alt="Uploaded AI Art" style={{ width: "300px", marginTop: "10px" }} />}
-
-              {generatedImage && (
-                <div className="image-container">
-                    <h3>Generated Image:</h3>
-                    <img src={generatedImage} alt="Generated AI Art" style={{ width: "300px", marginTop: "10px" }} />
+              {latestImageURL ? (
+                <div style={{ marginTop: "20px" }}>
+                    <h3>Latest Generated Image</h3>
+                    <img src={latestImageURL} alt="Generated AI" style={{ width: "300px" }} />
                     <br />
-                    <a href={generatedImage} download="generated-image.jpg">
-                        <button>Download Image</button>
+                    <a href={latestImageURL} download target="_blank" rel="noreferrer">
+                        Download Image
                     </a>
                 </div>
+              ) : (
+                <p>No image available yet.</p>
               )}
 
-              <button id="logout" onClick={() => setIsLoggedIn(false)}>Logout</button>
+              <button onClick={() => setIsLoggedIn(false)}>Logout</button>
           </section>
 
           <footer>
